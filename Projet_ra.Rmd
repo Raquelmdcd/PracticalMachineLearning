@@ -1,0 +1,203 @@
+---
+title: "projet_Practical_Machine_Learning"
+author: "Raquel Martín de Consuegra"
+date: "12 de marzo de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Loading libraries
+
+Load library if you have a problem maybe need install packages
+
+
+```{r}
+library(lattice)
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+library(e1071)
+
+```
+
+
+
+
+
+#Loading data
+
+
+ Load data by web also you can use data from computer for this you need change de url 
+
+
+
+```{r}
+trainingSet <- read.csv("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", sep=",", na.strings=c("NA","#DIV/0!",""))
+testingSet <- read.csv('http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv', sep=",", na.strings=c("NA","#DIV/0!",""))
+
+
+```
+
+
+
+#Preprocessing the data
+
+
+We delete columns whose data is not important for prediction. these are: X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window
+
+
+
+```{r}
+trainingSet <-trainingSet[,-c(1:7)]
+testingSet <-testingSet[,-c(1:7)]
+
+```
+
+
+With this assign "# DIV / 0! " And "" to the NA
+
+
+
+```{r}
+trainingSet[trainingSet == "#DIV/0!"] <- NA 
+trainingSet[trainingSet == ""] <- NA
+
+```
+
+
+Find the columns whose values represent more than NA 75 %.
+
+
+
+
+```{r}
+highNAs <- sapply(trainingSet, function(x){mean(is.na(x))>0.75})
+```
+
+
+We get rid of these columns
+
+
+
+```{r}
+
+trainingSet <- trainingSet[,highNAs == FALSE] 
+testingSet <- testingSet[,highNAs == FALSE]
+```
+
+
+
+If you want have a same result, need put this seed
+
+
+
+```{r}
+set.seed(1986)
+```
+
+
+#Cross-validation
+
+
+For my cross-validation I created two parts. One with 70% of the data and the other 30% of data
+
+
+```{r}
+traintrainSet <- createDataPartition(y=trainingSet$classe, p=0.7, list=FALSE)
+TrainTrainingSet <- trainingSet[traintrainSet, ] 
+TestTrainingSet <- trainingSet[-traintrainSet, ]
+```
+
+
+classe has 5 levels : A, B , C , D and E. A plot shows the frequency of variables
+
+
+
+```{r}
+plot(TrainTrainingSet$classe, col="purple", main="Plot  de niveles classe ", xlab="classe", ylab="Frecuencia")
+
+```
+
+
+
+#Building a model
+
+
+I compared two models to choose from that have a greater accuracy
+
+
+## Moldel 1: rpart
+
+
+rpart make only one tree decision. Now make the model
+
+
+```{r}
+model1 <- rpart(classe ~ ., data=TrainTrainingSet, method="class")
+```
+
+
+and predict
+
+
+```{r}
+prediction1 <- predict(model1, TestTrainingSet, type = "class")
+
+# Result Model 1:
+confusionMatrix(prediction1, TestTrainingSet$classe)
+
+```
+
+
+
+## Moldel 2: random Forest
+
+
+Random Forest works by making many decision trees on different subsets of the regressors and averaging them together
+
+
+```{r}
+model <- randomForest(classe ~. , data=TrainTrainingSet, method="class")
+```
+
+
+and predict
+
+
+```{r}
+prediction <- predict(model, TestTrainingSet, type = "class")
+confusionMatrix(prediction, TestTrainingSet$classe)
+
+```
+
+
+## Choice of model
+
+
+Random forest is an ensemble learning method used for classification and regression.  It uses multiple models for better performance that just using a single tree model as rpart.
+For this and because accuracy's Random forest is better than rpart I choose Random forest.
+
+
+
+#Predictions for results
+
+
+Now let's try data testingSet
+
+
+```{r}
+predicionfinal <- predict(model, testingSet, type="class")
+predicionfinal
+```
+
+
+#Conclusions
+
+There are many prediction models so that they are more accurately ajunste it's necessary to make a proper cleaning of the data. It is also very important cross-validation to check preccision model.
+
+
+
